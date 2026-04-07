@@ -401,7 +401,7 @@
          * Thay đổi URL Webhook của bạn tại đây
          */
         const WEBHOOK_1_URL = "https://dattran1223.id.vn/webhook/phan-tich-cv";
-        const WEBHOOK_2_URL = "https://dattran1223.id.vn/webhook/cv-evaluate";
+        const WEBHOOK_2_URL = "https://dattran1223.id.vn/webhook/cv-send-mail";
 
         // State Management
         let selectedFiles = [];
@@ -444,6 +444,7 @@
 
         function handleFiles(files) {
             for (let file of files) {
+                // Tránh trùng lặp file (dựa trên name và size)
                 if (!selectedFiles.some(f => f.name === file.name && f.size === file.size)) {
                     selectedFiles.push(file);
                 }
@@ -477,6 +478,7 @@
             const campaign = document.getElementById('campaign').value.trim();
             const jd = document.getElementById('jd').value.trim();
 
+            // Validation
             if (!campaign || !jd) {
                 alert("⚠️ Vui lòng nhập đầy đủ Tên chiến dịch và JD!");
                 return;
@@ -486,6 +488,7 @@
                 return;
             }
 
+            // UI Reset
             btnAnalyze.disabled = true;
             btnAnalyze.innerText = "⏳ Đang xử lý...";
             resultBody.innerHTML = '';
@@ -496,18 +499,22 @@
             const total = selectedFiles.length;
 
             try {
+                // Vòng lặp tuần tự (Sequential) theo yêu cầu
                 for (let i = 0; i < total; i++) {
                     const file = selectedFiles[i];
 
+                    // Update Progress
                     const currentCount = i + 1;
                     progressText.innerText = `Đang xử lý: ${currentCount}/${total}`;
                     progressBarFill.style.width = `${(currentCount / total) * 100}%`;
 
+                    // Prepare FormData
                     const formData = new FormData();
                     formData.append('campaign', campaign);
                     formData.append('jd', jd);
                     formData.append('file', file);
 
+                    // API Call
                     const response = await fetch(WEBHOOK_1_URL, {
                         method: 'POST',
                         body: formData
@@ -516,11 +523,13 @@
                     if (!response.ok) throw new Error(`Lỗi server khi xử lý file: ${file.name}`);
 
                     const result = await response.json();
+                    // Kỳ vọng response format: { name: "Nguyễn Văn A", score: 85, comment: "Kinh nghiệm tốt", conclusion: "Pass" }
 
                     allResults.push(result);
                     appendRowToTable(allResults.length, result);
                 }
 
+                // Finish
                 resultCard.style.display = 'block';
                 btnAnalyze.style.display = 'none';
                 btnReport.style.display = 'flex';
